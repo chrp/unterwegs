@@ -32,12 +32,24 @@ task :compile do
   FileUtils.cp_r('base/assets', "#{BIN}/assets")
   FileUtils.mkdir("#{BIN}/photos")
 
-  puts "Resizing photos"
+  puts "Resizing and rotating photos"
   gallery.photos.each do |photo|
     print "- "
     img = Magick::Image.read(photo.path).first
     print "#{photo.id}: "
 
+    # Rotating
+    begin
+      orientation = img.get_exif_by_entry('Orientation').first[1].to_i
+      if orientation == 8
+        print 'rotating -90deg, '
+        img.rotate!(-90)
+      end
+    rescue Exception => e
+      print '(Cannot read EXIF orientation) '
+    end
+
+    # Resizing
     img.resize_to_fit(100, 100).write("#{BIN}/photos/#{photo.thumb_filename}")
     print 'thumbnail, '
     img.resize_to_fit(800, 800).write("#{BIN}/photos/#{photo.filename}")
