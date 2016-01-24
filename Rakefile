@@ -8,7 +8,8 @@ require 'rmagick'
 
 SOURCE = 'src'
 BIN = 'bin'
-SIZE_SMALL = 800
+SIZE_THUMB = 100
+SIZE_REGULAR = 800
 SIZE_FULL = 1280
 
 task :default do
@@ -50,15 +51,23 @@ task :compile do
     end
 
     # Resizing
-    img.resize_to_fit(100, 100).write("#{BIN}/photos/#{photo.thumb_filename}")
+    img.resize_to_fit(SIZE_THUMB, SIZE_THUMB).write("#{BIN}/photos/#{photo.thumb_filename}")
     print 'thumbnail, '
-    img.resize_to_fit(800, 800).write("#{BIN}/photos/#{photo.filename}")
+    img.resize_to_fit(SIZE_REGULAR, SIZE_REGULAR).write("#{BIN}/photos/#{photo.filename}")
     print 'regular, '
-    img.resize_to_fit(1600, 1600).write("#{BIN}/photos/#{photo.fullscreen_filename}")
+    img.resize_to_fit(SIZE_FULL, SIZE_FULL).write("#{BIN}/photos/#{photo.fullscreen_filename}")
     puts 'fullscreen'
   end
 
   puts "Writing HTML"
   template = ERB.new(File.read('base/index.html.erb'))
   File.open("#{BIN}/index.html", 'w') { |file| file.write(template.result(binding)) }
+end
+
+task :deploy do
+  ruby 'deploy.rb'
+  # use scp to push the bin dir to a remote host if you have ssh access:
+  #   scp -r bin bla@blup.de:www/gallery
+  # use ssh to clean the remote directory if needed
+  #   ssh bla@blup.de "rm -rf www/gallery"
 end
