@@ -19,6 +19,10 @@ task :default do
 end
 
 task :check do
+  FileUtils.mkdir_p(SOURCE)
+  FileUtils.mkdir_p(BIN)
+  fail 'Galleria is missing! See README.md.' unless File.exists?('base/assets/galleria')
+
   Gallery.new(SOURCE).photos.each do |photo|
     puts "#{photo.id}: #{photo.title}, #{photo.description} (#{photo.created_at})"
   end
@@ -85,6 +89,7 @@ task :compile do
 end
 
 task :deploy do
+  FileUtils.touch('deploy.rb')
   ruby 'deploy.rb'
   # use scp to push the bin dir to a remote host if you have ssh access:
   #   scp -r bin bla@blup.de:www/gallery
