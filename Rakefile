@@ -8,9 +8,12 @@ require 'rmagick'
 
 SOURCE = 'src'
 BIN = 'bin'
-SIZE_THUMB = 100
-SIZE_REGULAR = 800
-SIZE_FULL = 1280
+RES_THUMB = 100
+RES_REGULAR = 800
+RES_FULL = 1280
+QUALITY_THUMB = 40
+QUALITY_REGULAR = 70
+QUALITY_FULL = 70
 
 task :default do
   puts 'rake check   - test run for generating a new gallery'
@@ -36,7 +39,8 @@ task :compile do
   gallery = Gallery.new(SOURCE)
 
   puts "Preparing #{BIN}"
-  FileUtils.mv(BIN, 'tmp')
+  FileUtils.rm_r('tmp', force: true)
+  File.exists?(BIN) ? FileUtils.mv(BIN, 'tmp') : FileUtils.mkdir('tmp')
   FileUtils.mkdir(BIN)
   FileUtils.cp_r('base/assets', "#{BIN}/assets")
   FileUtils.mkdir("#{BIN}/photos")
@@ -72,12 +76,20 @@ task :compile do
       end
 
       # Resizing
-      img.resize_to_fit(SIZE_THUMB, SIZE_THUMB).write("#{BIN}/photos/#{photo.thumb_filename}")
-      print 'thumbnail, '
-      img.resize_to_fit(SIZE_REGULAR, SIZE_REGULAR).write("#{BIN}/photos/#{photo.filename}")
-      print 'regular, '
-      img.resize_to_fit(SIZE_FULL, SIZE_FULL).write("#{BIN}/photos/#{photo.fullscreen_filename}")
-      puts 'fullscreen'
+      jobs = {
+        thumbnail:  { resoltion: RES_THUMB, quality: QUALITY_THUMB, file: "#{BIN}/photos/#{photo.thumb_filename}" },
+        regular:    { resoltion: RES_REGULAR, quality: QUALITY_REGULAR, file: "#{BIN}/photos/#{photo.filename}" },
+        fullscreen: { resoltion: RES_FULL, quality: QUALITY_FULL, file: "#{BIN}/photos/#{photo.fullscreen_filename}" },
+      }
+
+      jobs.each do |job, options|
+        resolution, quality, file = options.values
+        img.resize_to_fit(resolution, resolution).write(file) { self.quality = quality }
+        file_size = (File.stat(file).size/1024).round
+        print "#{job} (#{file_size} KB)"
+        print ", " unless job == :fullscreen # last job
+      end
+      puts ''
     end
   end
 
