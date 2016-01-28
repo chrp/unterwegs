@@ -27,7 +27,12 @@
     Galleria.loadTheme('assets/galleria/themes/fullscreen/galleria.fullscreen.min.js');
 
     // Initialize Galleria
-    Galleria.run('.galleria');
+    Galleria.run('.galleria', {
+      transition: "none",
+      imageCrop: false,
+      thumbCrop: "height",
+      easing: "galleriaOut"
+    });
   </script>
   </body>
 </html>
