@@ -78,9 +78,9 @@ task :compile do
 
       # Resizing
       jobs = {
-        thumbnail:  { resoltion: RES_THUMB, quality: QUALITY_THUMB, file: "#{BIN}/photos/#{photo.thumb_filename}" },
-        regular:    { resoltion: RES_REGULAR, quality: QUALITY_REGULAR, file: "#{BIN}/photos/#{photo.filename}" },
-        fullscreen: { resoltion: RES_FULL, quality: QUALITY_FULL, file: "#{BIN}/photos/#{photo.fullscreen_filename}" },
+        thumbnail:  { resolution: RES_THUMB, quality: QUALITY_THUMB, file: "#{BIN}/photos/#{photo.thumb_filename}" },
+        regular:    { resolution: RES_REGULAR, quality: QUALITY_REGULAR, file: "#{BIN}/photos/#{photo.filename}" },
+        fullscreen: { resolution: RES_FULL, quality: QUALITY_FULL, file: "#{BIN}/photos/#{photo.fullscreen_filename}" },
       }
 
       jobs.each do |job, options|
