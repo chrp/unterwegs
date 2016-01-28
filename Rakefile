@@ -17,6 +17,7 @@ QUALITY_FULL = 70
 
 task :default do
   puts 'rake check   - test run for generating a new gallery'
+  puts 'rake clear   - removes bin, use this to create a gallery from scratch without using cache'
   puts 'rake compile - generates a new gallery'
   puts 'rake deploy  - deploys the gallery to destination defined in dest.yml'
 end
