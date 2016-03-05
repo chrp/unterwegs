@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%=gallery.name %></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=0.5,user-scalable=no" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="../assets/jquery.min.js"></script>
+    <script src="../assets/galleria/galleria-1.4.2.min.js"></script>
+    <script src="../assets/galleria/plugins/history/galleria.history.min.js"></script>
+
+    <style>body{background:#000;}</style>
+  </head>
+<body>
+  <div class="galleria">
+    <% gallery.photos.each do |photo| %>
+      <a href="<%=photo.filename%>">
+        <img
+          src="<%=photo.thumb_filename%>"
+          data-big="<%=photo.fullscreen_filename%>"
+          data-title="<%=photo.title%>"
+          data-description="<%=photo.description%>"
+        >
+      </a>
+    <% end %>
+  </div>
+  <script>
+    // Load the Fullscreen theme
+    Galleria.loadTheme('../assets/galleria/themes/fullscreen/galleria.fullscreen.min.js');
+
+    // Initialize Galleria
+    Galleria.run('.galleria', {
+      transition: "none",
+      imageCrop: false,
+      thumbCrop: "height",
+      easing: "galleriaOut"
+    });
+  </script>
+  </body>
+</html>

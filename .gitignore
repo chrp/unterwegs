@@ -4,3 +4,4 @@ base/assets/galleria/**
 .DS_Store
 deploy.rb
 */.DS_Store
+prep/**

@@ -27,8 +27,11 @@ task :check do
   FileUtils.mkdir_p(BIN)
   fail 'Galleria is missing! See README.md.' unless File.exists?('base/assets/galleria')
 
-  Gallery.new(SOURCE).photos.each do |photo|
-    puts "#{photo.id}: #{photo.title}, #{photo.description} (#{photo.created_at})"
+  Index.new(SOURCE).galleries.each do |gallery|
+    puts gallery.name
+    gallery.photos.each do |photo|
+      puts "  #{photo.id}: #{photo.title}, #{photo.description} (#{photo.created_at})"
+    end
   end
 end
 
@@ -37,64 +40,72 @@ task :clear do
 end
 
 task :compile do
-  gallery = Gallery.new(SOURCE)
+  index = Index.new(SOURCE)
 
-  puts "Preparing #{BIN}"
+  puts "Preparing"
   FileUtils.rm_r('tmp', force: true)
   File.exists?(BIN) ? FileUtils.mv(BIN, 'tmp') : FileUtils.mkdir('tmp')
   FileUtils.mkdir(BIN)
   FileUtils.cp_r('base/assets', "#{BIN}/assets")
-  FileUtils.mkdir("#{BIN}/photos")
+  FileUtils.cp('base/robots.txt', "#{BIN}/robots.txt")
 
-  puts "Resizing and rotating photos"
-  gallery.photos.each do |photo|
-    print "- #{photo.id}: "
+  index.galleries.each do |gallery|
+    puts gallery.name
+    FileUtils.mkdir("#{BIN}/#{gallery.url_name}")
 
-    # Check if photos still exist from last compile run
-    files_cached = File.exists?("tmp/photos/#{photo.thumb_filename}") &&
-                   File.exists?("tmp/photos/#{photo.filename}") &&
-                   File.exists?("tmp/photos/#{photo.fullscreen_filename}")
+    gallery.photos.each do |photo|
+      print "- #{photo.id}: "
 
-    if files_cached
-      # Move existing files
-      [photo.thumb_filename, photo.filename, photo.fullscreen_filename].each do |file|
-        FileUtils.mv("tmp/photos/#{file}", "#{BIN}/photos/#{file}")
-      end
-      puts 'using cached files'
-    else
-      # Use image magick
-      img = Magick::Image.read(photo.path).first
+      # Check if photos still exist from last compile run
+      files_cached = File.exists?("tmp/#{gallery.url_name}/#{photo.thumb_filename}") &&
+                     File.exists?("tmp/#{gallery.url_name}/#{photo.filename}") &&
+                     File.exists?("tmp/#{gallery.url_name}/#{photo.fullscreen_filename}")
 
-      # Rotating
-      begin
-        orientation = img.get_exif_by_entry('Orientation').first[1].to_i
-        if orientation == 8
-          print 'rotating -90deg, '
-          img.rotate!(-90)
+      if files_cached
+        # Move existing files
+        [photo.thumb_filename, photo.filename, photo.fullscreen_filename].each do |file|
+          FileUtils.mv("tmp/#{gallery.url_name}/#{file}", "#{BIN}/#{gallery.url_name}/#{file}")
         end
-      rescue Exception => e
-        print '(Cannot read EXIF orientation) '
-      end
+        puts 'using cached files'
+      else
+        # Use image magick
+        img = Magick::Image.read(photo.path).first
 
-      # Resizing
-      jobs = {
-        thumbnail:  { resolution: RES_THUMB, quality: QUALITY_THUMB, file: "#{BIN}/photos/#{photo.thumb_filename}" },
-        regular:    { resolution: RES_REGULAR, quality: QUALITY_REGULAR, file: "#{BIN}/photos/#{photo.filename}" },
-        fullscreen: { resolution: RES_FULL, quality: QUALITY_FULL, file: "#{BIN}/photos/#{photo.fullscreen_filename}" },
-      }
+        # Rotating
+        begin
+          orientation = img.get_exif_by_entry('Orientation').first[1].to_i
+          if orientation == 8
+            print 'rotating -90deg, '
+            img.rotate!(-90)
+          end
+        rescue Exception => e
+          print '(Cannot read EXIF orientation) '
+        end
 
-      jobs.each do |job, options|
-        resolution, quality, file = options.values
-        img.resize_to_fit(resolution, resolution).write(file) { self.quality = quality }
-        file_size = (File.stat(file).size/1024).round
-        print "#{job} (#{file_size} KB)"
-        print ", " unless job == :fullscreen # last job
+        # Resizing
+        jobs = {
+          thumbnail:  { resolution: RES_THUMB, quality: QUALITY_THUMB, file: "#{BIN}/#{gallery.url_name}/#{photo.thumb_filename}" },
+          regular:    { resolution: RES_REGULAR, quality: QUALITY_REGULAR, file: "#{BIN}/#{gallery.url_name}/#{photo.filename}" },
+          fullscreen: { resolution: RES_FULL, quality: QUALITY_FULL, file: "#{BIN}/#{gallery.url_name}/#{photo.fullscreen_filename}" },
+        }
+
+        jobs.each do |job, options|
+          resolution, quality, file = options.values
+          img.resize_to_fit(resolution, resolution).write(file) { self.quality = quality }
+          file_size = (File.stat(file).size/1024).round
+          print "#{job} (#{file_size} KB)"
+          print ", " unless job == :fullscreen # last job
+        end
+        puts ''
       end
-      puts ''
     end
+
+    puts "- index.html"
+    template = ERB.new(File.read('base/gallery_index.html.erb'))
+    File.open("#{BIN}/#{gallery.url_name}/index.html", 'w') { |file| file.write(template.result(binding)) }
   end
 
-  puts "Writing HTML"
+  puts "Global index.html"
   template = ERB.new(File.read('base/index.html.erb'))
   File.open("#{BIN}/index.html", 'w') { |file| file.write(template.result(binding)) }
 
